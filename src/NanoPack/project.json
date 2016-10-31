@@ -1,0 +1,40 @@
+{
+  "version": "0.0.0-*",
+  "authors": [
+    "Octopus Deploy"
+  ],
+  "description": "NanoPack is a .NET Core tool to pack ASP.NET Core applications into NanoServer VHDs",
+  "language": "en-US",
+  "packOptions": {
+    "summary": "NanoPack is a .NET Core tool to pack ASP.NET Core applications into NanoServer VHDs",
+    "projectUrl": "https://github.com/OctopusDeploy/NanoPack/",
+    "licenseUrl": "https://github.com/OctopusDeploy/NanoPack/blob/master/LICENSE"
+  },
+  "buildOptions": {
+    "debugType": "portable",
+    "emitEntryPoint": true,
+    "outputName": "dotnet-nanopack",
+    "copyToOutput": {
+      "include": [
+        "tools/**"
+      ]
+    }
+  },
+  "dependencies": {
+    "System.Security.Principal.Windows": "4.0.0",
+    "Microsoft.Extensions.CommandLineUtils": "1.0.0",
+    "Octostache": "2.0.4",
+    "System.IO.FileSystem": "4.0.1"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.0"
+        }
+      },
+      "imports": "dnxcore50"
+    }
+  }
+}
