@@ -75,18 +75,19 @@ namespace NanoPack
         {
             var tempDir = GetTemporaryDirectory();
             LogMessage($"Working directory is {tempDir}");
-            foreach (var f in Directory.EnumerateFiles(GetToolsDirectory()))
+            var assembly = typeof(BuildVhdTask).GetTypeInfo().Assembly;
+            foreach (var resourceName in assembly.GetManifestResourceNames())
             {
-                File.Copy(f, Path.Combine(tempDir, Path.GetFileName(f)));
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
+                using (var file = new FileStream(Path.Combine(tempDir, resourceName), FileMode.Create))
+                {
+                    for (var i = 0; i < stream.Length; i++)
+                    {
+                        file.WriteByte((byte) stream.ReadByte());
+                    }
+                }
             }
             return tempDir;
-        }
-
-        private static string GetToolsDirectory()
-        {
-            var currDir = Path.GetDirectoryName(typeof(Program).GetTypeInfo().Assembly.Location);
-            var tools = Path.Combine(currDir, "tools");
-            return tools;
         }
 
         private static string Substitute(string fileName, VariableDictionary variables)
