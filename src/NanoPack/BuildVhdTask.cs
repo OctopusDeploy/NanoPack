@@ -60,7 +60,7 @@ namespace NanoPack
 
             PowerShell.RunFile(working, "build-vhd.ps1");
 
-            LogMessage("Complete");
+            LogMessage($"Complete. VHD created at {vhdFilePath}");
             return true;
         }
 
@@ -78,6 +78,7 @@ namespace NanoPack
             var assembly = typeof(BuildVhdTask).GetTypeInfo().Assembly;
             foreach (var resourceName in assembly.GetManifestResourceNames())
             {
+                LogMessage($"Extracting {resourceName} to {tempDir}");
                 using (var stream = assembly.GetManifestResourceStream(resourceName))
                 using (var file = new FileStream(Path.Combine(tempDir, resourceName), FileMode.Create))
                 {

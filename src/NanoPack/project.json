@@ -16,7 +16,7 @@
     "outputName": "dotnet-nanopack",
     "embed": {
       "mappings": {
-        "/":  "tools/**"
+        "/": "tools/**"
       }
     }
   },
