@@ -28,6 +28,9 @@ var gitVersionInfo = GitVersion(new GitVersionSettings {
 if(BuildSystem.IsRunningOnTeamCity)
     BuildSystem.TeamCity.SetBuildNumber(gitVersionInfo.NuGetVersion);
 
+if(BuildSystem.IsRunningOnAppVeyor)
+    BuildSystem.AppVeyor.UpdateBuildVersion(gitVersionInfo.NuGetVersion);
+
 var nugetVersion = gitVersionInfo.NuGetVersion;
 
 ///////////////////////////////////////////////////////////////////////////////
