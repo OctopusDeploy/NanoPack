@@ -2,7 +2,7 @@
   "profiles": {
     "nanopack": {
       "commandName": "Project",
-      "commandLineArgs": "-o c:\\vm\\vhds -n nano-demo -i C:\\dev\\octopus\\AspNetCoreHelloWorld\\src\\AspNetCoreHelloWorld\\bin\\Debug\\netcoreapp1.0\\win10-x64\\publish -f c:\\isos -p 8000"
+      "commandLineArgs": "-o c:\\vm\\vhds -i C:\\dev\\octopus\\AspNetCoreHelloWorld\\src\\AspNetCoreHelloWorld\\bin\\Debug\\netcoreapp1.0\\win10-x64\\publish -f c:\\isos -p 8000 --package -u http://localhost:8065 -k API-YENY1L3YQZRNTC3J7HQ4QCCSFA"
     }
   }
 }

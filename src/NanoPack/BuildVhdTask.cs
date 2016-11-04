@@ -7,24 +7,32 @@ using System.Xml.Linq;
 using NanoPack;
 using Octostache;
 using System.Linq;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Net;
 
 namespace NanoPack
 {
     internal class BuildVhdTask : AbstractTask
     {
         // Placeholder to be roughly the shape of a Microsoft Build Task if we need to port
-        public string VhdDestinationFolder { get; set; }
-        public string AppName { get; set; }
-        public string PublishedAppFolder { get; set; }
-        public string NanoServerInstallFiles { get; set; }
-        public int Port { get; set; }
+        //public string VhdDestinationFolder { get; set; }
+        //public string AppName { get; set; }
+        //public string PublishedAppFolder { get; set; }
+        //public string NanoServerInstallFiles { get; set; }
+        //public string ExeName { get; set; }
+        //public int Port { get; set; }
+        //public bool Package { get; set; }
+        //public bool KeepPackagedVhd { get; set; }
+        //public string OctopusUrl { get; set; }
+        //public string ApiKey { get; set; }
 
         public override bool Execute()
         {
-            return Generate(VhdDestinationFolder, AppName, PublishedAppFolder, NanoServerInstallFiles, Port);
+            return false; //Generate(VhdDestinationFolder, AppName, NanoServerInstallFiles, ExeName, Port, Package, KeepPackagedVhd, OctopusUrl, ApiKey);
         }
 
-        public bool Generate(string vhdDestinationFolder, string publishedAppName, string publishedAppFolder, string nanoServerInstallFiles, int port)
+        public bool Generate(string vhdDestinationFolder, string publishedAppFolder, string nanoServerInstallFiles, string exeName, int port, bool package, bool keepPackagedVhd, string octopusUrl, string apiKey)
         {
             if (!Extras.IsAdministrator())
             {
@@ -41,7 +49,8 @@ namespace NanoPack
                 nanoServerInstallFiles = d.Parent.FullName;
             }
 
-            var appName = publishedAppName.Replace(" ", "-");
+            var exePath = FindExe(exeName, publishedAppFolder);
+            var appName = Path.GetFileNameWithoutExtension(exePath);
             var vhdFilePath = Path.Combine(vhdDestinationFolder, appName + ".vhd");
             var working = PrepareWorkingDirectory();
 
@@ -60,8 +69,85 @@ namespace NanoPack
 
             PowerShell.RunFile(working, "build-vhd.ps1");
 
-            LogMessage($"Complete. VHD created at {vhdFilePath}");
+            LogMessage($"VHD created at {vhdFilePath}");
+
+            if (package)
+            {
+                Package(vhdDestinationFolder, keepPackagedVhd, octopusUrl, apiKey, exePath, appName, vhdFilePath);
+            }
+
+            LogMessage("Finished");
+
             return true;
+        }
+
+        private void Package(string vhdDestinationFolder, bool keepPackagedVhd, string octopusUrl, string apiKey, string exePath,
+            string appName, string vhdFilePath)
+        {
+            LogMessage($"Packing VHD");
+            var version = GetVersionInformation(exePath);
+            var zipPath = Path.Combine(vhdDestinationFolder, $"{appName}.{version}.zip");
+
+            if (File.Exists(zipPath))
+            {
+                File.Delete(zipPath);
+            }
+
+            using (var fs = new FileStream(zipPath, FileMode.Create))
+            using (var arch = new ZipArchive(fs, ZipArchiveMode.Create))
+            {
+                arch.CreateEntryFromFile(vhdFilePath, Path.GetFileName(vhdFilePath), CompressionLevel.Optimal);
+            }
+
+            LogMessage($"VHD packaged to {zipPath}");
+
+            if (!keepPackagedVhd)
+            {
+                LogMessage("Deleting VHD, use --keepPackagedVhd to keep");
+                File.Delete(vhdFilePath);
+            }
+
+            if (!string.IsNullOrWhiteSpace(octopusUrl) && !string.IsNullOrWhiteSpace(apiKey))
+            {
+                OctoPusher.Upload(octopusUrl, apiKey, zipPath, LogMessage);
+            }
+        }
+
+        private static string FindExe(string exeName, string publishedAppFolder)
+        {
+            string path;
+            if (string.IsNullOrWhiteSpace(exeName))
+            {
+                var paths = Directory.GetFiles(publishedAppFolder, "*.exe").ToArray();
+                if (paths.Length == 1)
+                {
+                    path = paths[0];
+                }
+                else if (paths.Length == 0)
+                {
+                    throw new Exception($"No .exe found in the Published App Folder at {publishedAppFolder}. Application must be a self-contained ASP.NET Core app.");
+                }
+                else
+                {
+                    throw new Exception($"More than one .exe found in the Published App Folder at {publishedAppFolder}. Please specify which .exe to inspect for version and naming information with the --exeName parameter.");
+                }
+            }
+            else
+            {
+                path = Path.Combine(publishedAppFolder, exeName);
+                if (!File.Exists(path))
+                {
+                    throw new Exception($"No .exe found at {path} please check your --exePath setting.");
+                }
+            }
+
+            return path;
+        }
+
+        private static string GetVersionInformation(string exePath)
+        {
+            var version = FileVersionInfo.GetVersionInfo(exePath);
+            return $"{version.ProductMajorPart}.{version.ProductMinorPart}.{version.ProductBuildPart}";
         }
 
         private static string GetTemporaryDirectory()

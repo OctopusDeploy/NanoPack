@@ -24,7 +24,9 @@
     "System.Security.Principal.Windows": "4.0.0",
     "Microsoft.Extensions.CommandLineUtils": "1.0.0",
     "Octostache": "2.0.4",
-    "System.IO.FileSystem": "4.0.1"
+    "System.IO.FileSystem": "4.0.1",
+    "System.Diagnostics.FileVersionInfo": "4.0.0",
+    "System.IO.Compression.ZipFile" :  "4.0.1" 
   },
   "frameworks": {
     "netcoreapp1.0": {
