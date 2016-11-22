@@ -3,7 +3,7 @@ Stop-Transcript | out-null
 $ErrorActionPreference = "Continue"
 Start-Transcript -path C:\first-boot-script-output.log -append
 
-$bindingInfo = "*:#{port}:"
+$bindingInfo = '*:#{port}:'
 $publishFolder = '#{publishFolder}'
 
 # Open port in firewall
@@ -39,6 +39,7 @@ New-IISConfigCollectionElement $modules -ConfigAttribute @{"name"="AspNetCoreMod
 
 # Create Site
 $appPath = Join-Path -Path $env:SystemDrive -ChildPath $publishFolder
+Write-Host "Creating new IIS site serving $appPath"
 New-IISSite -Name "AspNetCore" -PhysicalPath $appPath -BindingInformation $bindingInfo
 
 Stop-Transcript
