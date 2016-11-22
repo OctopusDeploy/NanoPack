@@ -1,6 +1,7 @@
 $appName = '#{appName}'
 $vhd = '#{vhd}'
-$publishPath = '#{publishPath}'
+$inputFolder = '#{inputFolder}'
+$publishFolder = '#{publishFolder}'
 $machineName = '#{machineName}'
 $nanoserverFolder = '#{nanoServerFolder}'
 $edition = '#{edition}'
@@ -49,12 +50,9 @@ Try
     Copy-Item -Path .\aspnetcore_schema.xml -Destination $mountPath\windows\system32\inetsrv\config\schema
 
 	Write-NanoLog "Copying application files to VHD"
-    New-Item -ItemType Directory -Force -Path $mountPath\PublishedApps\$appName
-    Copy-Item -Path $publishPath\* -Destination $mountPath\PublishedApps\$appName -Recurse
-
-	Write-NanoLog "Writing config details to VHD"
-	# write some details to the vhd so we can find the app to do config transforms later on
-	@{Applications=@(@{Name="$appName";Path=".\PublishedApps\$appName"})} | ConvertTo-Json -Depth 99 | Out-File $mountPath\octopus.config.json
+	$appPath = Join-Path -Path $mountPath -ChildPath $publishFolder
+    New-Item -ItemType Directory -Force -Path $appPath
+    Copy-Item -Path $inputFolder\* -Destination $appPath -Recurse
 
 	Write-NanoLog "Dismounting VHD"
 	Dismount-WindowsImage -Path $mountPath -Save

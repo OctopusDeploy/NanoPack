@@ -32,7 +32,7 @@ namespace NanoPack
             return false; //Generate(VhdDestinationFolder, AppName, NanoServerInstallFiles, ExeName, Port, Package, KeepPackagedVhd, OctopusUrl, ApiKey);
         }
 
-        public bool Generate(string vhdDestinationFolder, string publishedAppFolder, string nanoServerInstallFiles, string exeName, int port, bool package, bool keepPackagedVhd, string octopusUrl, string apiKey)
+        public bool Generate(string vhdDestinationFolder, string inputFolder, string nanoServerInstallFiles, string exeName, int port, bool package, bool keepPackagedVhd, string octopusUrl, string apiKey, string publishFolder, string password)
         {
             if (!Extras.IsAdministrator())
             {
@@ -49,20 +49,29 @@ namespace NanoPack
                 nanoServerInstallFiles = d.Parent.FullName;
             }
 
-            var exePath = FindExe(exeName, publishedAppFolder);
+            var exePath = FindExe(exeName, inputFolder);
             var appName = Path.GetFileNameWithoutExtension(exePath);
             var vhdFilePath = Path.Combine(vhdDestinationFolder, appName + ".vhd");
             var working = PrepareWorkingDirectory();
+            if (string.IsNullOrWhiteSpace(publishFolder))
+            {
+                publishFolder = "PublishedApps\\appName";
+            }
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                password = "P@ssw0rd";
+            }
 
             var variables = new VariableDictionary();
             variables.Set("appName", appName);
             variables.Set("port", port.ToString());
             variables.Set("vhd", vhdFilePath);
-            variables.Set("publishPath", publishedAppFolder);
+            variables.Set("inputFolder", inputFolder);
             variables.Set("machineName", "aspnetcore");
             variables.Set("nanoserverFolder", nanoServerInstallFiles);
             variables.Set("edition", "Datacenter");
-            variables.Set("vmpassword", "P@ssw0rd");
+            variables.Set("vmpassword", password);
+            variables.Set("publishFolder", publishFolder);
 
             Substitute(Path.Combine(working, "first-boot.ps1"), variables);
             Substitute(Path.Combine(working, "build-vhd.ps1"), variables);

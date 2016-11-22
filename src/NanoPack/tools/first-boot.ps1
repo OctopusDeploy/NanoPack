@@ -3,8 +3,8 @@ Stop-Transcript | out-null
 $ErrorActionPreference = "Continue"
 Start-Transcript -path C:\first-boot-script-output.log -append
 
-$appname = '#{appname}'
 $bindingInfo = "*:#{port}:"
+$publishFolder = '#{publishFolder}'
 
 # Open port in firewall
 New-NetFirewallRule -Name "AspNet5 IIS" -DisplayName "Allow HTTP on TCP/#{port}" -Protocol TCP -LocalPort #{port} -Action Allow -Enabled True
@@ -38,6 +38,7 @@ $modules = Get-IISConfigSection "system.webServer/modules" | Get-IISConfigCollec
 New-IISConfigCollectionElement $modules -ConfigAttribute @{"name"="AspNetCoreModule"}
 
 # Create Site
-New-IISSite -Name "AspNetCore" -PhysicalPath $env:SystemDrive\PublishedApps\$appname -BindingInformation $bindingInfo
+$appPath = Join-Path -Path $env:SystemDrive -ChildPath $publishFolder
+New-IISSite -Name "AspNetCore" -PhysicalPath $appPath -BindingInformation $bindingInfo
 
 Stop-Transcript
