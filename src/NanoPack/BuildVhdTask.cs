@@ -153,9 +153,13 @@ namespace NanoPack
             return path;
         }
 
-        private static string GetVersionInformation(string exePath)
+        private string GetVersionInformation(string exePath)
         {
-            var version = FileVersionInfo.GetVersionInfo(exePath);
+            // .NET Core doesn't seem to set the version on a published exe as of 1.0.1, only it's underlying dll.
+            var dllPath = exePath.Remove(exePath.Length - 3) + "dll";
+            var checkPath = File.Exists(dllPath) ? dllPath : exePath;
+            LogMessage($"Extracting version information from {checkPath}");
+            var version = FileVersionInfo.GetVersionInfo(checkPath);
             return $"{version.ProductMajorPart}.{version.ProductMinorPart}.{version.ProductBuildPart}";
         }
 
