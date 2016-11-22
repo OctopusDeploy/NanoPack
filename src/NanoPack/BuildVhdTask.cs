@@ -160,7 +160,7 @@ namespace NanoPack
             var checkPath = File.Exists(dllPath) ? dllPath : exePath;
             LogMessage($"Extracting version information from {checkPath}");
             var version = FileVersionInfo.GetVersionInfo(checkPath);
-            return $"{version.ProductMajorPart}.{version.ProductMinorPart}.{version.ProductBuildPart}";
+            return version.ProductVersion;
         }
 
         private static string GetTemporaryDirectory()
