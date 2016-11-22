@@ -52,8 +52,8 @@ Try
 
 	Write-NanoLog "Copying application files to VHD"
 	$appPath = Join-Path -Path $mountPath -ChildPath $publishFolder
-    New-Item -ItemType Directory -Force -Path $appPath
-    Copy-Item -Path $inputFolder\* -Destination $appPath -Recurse
+	# copy with robocopy to avoid path length issues since we are mounting the vhd deep into an existing folder structure
+	robocopy $inputFolder $appPath /E
 
 	Write-NanoLog "Dismounting VHD"
 	Dismount-WindowsImage -Path $mountPath -Save
