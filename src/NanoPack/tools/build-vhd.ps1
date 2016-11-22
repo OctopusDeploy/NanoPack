@@ -1,4 +1,3 @@
-$appName = '#{appName}'
 $vhd = '#{vhd}'
 $inputFolder = '#{inputFolder}'
 $publishFolder = '#{publishFolder}'
@@ -18,6 +17,8 @@ If (Test-Path $vhd){
 	Write-NanoLog "Removing existing VHD at $vhd"
 	Remove-Item $vhd
 }
+
+Write-NanoLog "Creating Nanoserver VHD with settings: vhd: $vhd, inputFolder: $inputFolder, publishFolder: $publishFolder, machineName: $machineName, nanoServerFolder: $nanoserverFolder, edition: $edition."
 
 Write-NanoLog "Importing NanoServerImageGenerator"
 Import-Module -Name $nanoserverFolder\Nanoserver\NanoServerImageGenerator\NanoServerImageGenerator
@@ -60,7 +61,7 @@ Try
 Catch
 {
 	Write-NanoLog "An error has occured during VHD creation. VHD dismounted without saving."
-    Dismount-WindowsImage -Path $mountPath
+    Dismount-WindowsImage -Path $mountPath -Discard
 	throw
 }
 
