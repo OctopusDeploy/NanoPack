@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using Microsoft.Extensions.CommandLineUtils;
 
 namespace NanoPack
@@ -25,7 +27,7 @@ namespace NanoPack
             var password = app.Option("--password", "The Administrator password of the resulting NanoServer image (optional). Default is P@ssw0rd", CommandOptionType.SingleValue);
             var vhdx = app.Option("-x | --vhdx", "Build a VHDX rather than a VHD", CommandOptionType.NoValue);
             var edition = app.Option("--edition", "The windows server edition. Standard or Datacenter", CommandOptionType.SingleValue);
-
+            var scripts = app.Option("-s | --firstbootscript", "Path to a PowerShell script that will be copied to the VHD and run on its first boot", CommandOptionType.MultipleValue);
 
             app.HelpOption("-? | -h | --help");
 
@@ -74,6 +76,18 @@ namespace NanoPack
                         task.Password = password.Value();
                     }
                     task.Vhdx = vhdx.HasValue();
+
+                    var foundScripts = new List<string>();
+                    foreach (var scriptPath in scripts.Values)
+                    {
+                        var path = Path.GetFullPath(scriptPath);
+                        if (!File.Exists(path))
+                        {
+                            throw new ArgumentException($"No file found at {path}, check your --firstbootscript parameters");
+                        }
+                        foundScripts.Add(scriptPath);
+                    }
+                    task.ScriptPaths = string.Join(";", foundScripts);
 
                     task.Generate();
                 }

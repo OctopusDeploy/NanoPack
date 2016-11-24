@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NanoPack
 {
-    public class OctoPusher
+    public static class OctoPusher
     {
         public static void Upload(string octopusUrl, string apiKey, string packageFilePath, Action<string> log, bool replaceExisting = false)
         {

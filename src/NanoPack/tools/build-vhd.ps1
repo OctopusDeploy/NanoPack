@@ -5,6 +5,7 @@ $machineName = '#{machineName}'
 $nanoserverFolder = '#{nanoServerFolder}'
 $edition = '#{edition}'
 $Password='#{vmpassword}'
+$FirstBootScripts = '#{firstBootScripts}'
 $ErrorActionPreference = "Stop"
 $SecurePassword=(ConvertTo-Securestring -asplaintext -force $Password)
 
@@ -54,6 +55,12 @@ Try
 	$appPath = Join-Path -Path $mountPath -ChildPath $publishFolder
 	# copy with robocopy to avoid path length issues since we are mounting the vhd deep into an existing folder structure
 	robocopy $inputFolder $appPath /E
+
+	New-Item -ItemType directory -Path $mountPath\FirstBootScripts
+	$FirstBootScripts.Split(";", [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object {
+		Write-NanoLog "Adding $_ to VHD first-boot scripts"
+		Copy-Item -Path $_ -Destination $mountPath\FirstBootScripts
+	}
 
 	Write-NanoLog "Dismounting VHD"
 	Dismount-WindowsImage -Path $mountPath -Save

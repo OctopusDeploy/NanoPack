@@ -34,6 +34,7 @@ namespace NanoPack
         public string MachineName { get; set; } = "NanoServer";
         public EditionType Edition { get; private set; } = EditionType.Datacenter;
         public bool Vhdx { get; set; }
+        public string ScriptPaths { get; set; }
 
         public enum EditionType
         {
@@ -100,6 +101,7 @@ namespace NanoPack
             variables.Set("edition", "Datacenter");
             variables.Set("vmpassword", Password);
             variables.Set("publishFolder", PublishFolder);
+            variables.Set("firstBootScripts", ScriptPaths);
 
             Substitute(Path.Combine(working, "first-boot.ps1"), variables);
             Substitute(Path.Combine(working, "build-vhd.ps1"), variables);

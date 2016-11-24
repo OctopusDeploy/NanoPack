@@ -42,4 +42,10 @@ $appPath = Join-Path -Path $env:SystemDrive -ChildPath $publishFolder
 Write-Host "Creating new IIS site serving $appPath"
 New-IISSite -Name "AspNetCore" -PhysicalPath $appPath -BindingInformation $bindingInfo
 
+# Run other first boot scripts
+Get-ChildItem $env:SystemDrive\FirstBootScripts -Filter *.ps1 | ForEach-Object {
+	Write-Host "Running $_..."
+  & $_.FullName
+}
+
 Stop-Transcript
