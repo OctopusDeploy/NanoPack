@@ -9,13 +9,58 @@ using Octostache;
 using System.Linq;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Linq.Expressions;
 using System.Net;
+using System.Runtime.InteropServices;
+using Sprache;
 
 namespace NanoPack
 {
     internal class BuildVhdTask
     {
-        public bool Generate(string vhdDestinationFolder, string inputFolder, string nanoServerInstallFiles, string exeName, int port, bool package, bool keepPackagedVhd, string octopusUrl, string apiKey, string publishFolder, string password)
+        public string VhdDestinationFolder { get; set; }
+        public string InputFolder { get; set; }
+        public string NanoServerInstallFiles { get; set; }
+        public int Port { get; set; } = 80;
+
+        public string ExeName { get; set; }
+        public string OctopusUrl { get; set; }
+        public bool Package { get; set; }
+        public bool KeepPackagedVhd { get; set; }
+        public bool KeepUploadedZip { get; set; }
+        public string ApiKey { get; set; }
+        public string PublishFolder { get; set; } = "PublishedApp";
+        public string Password { get; set; } = "P@ssw0rd";
+        public string MachineName { get; set; } = "NanoServer";
+        public EditionType Edition { get; private set; } = EditionType.Datacenter;
+        public bool Vhdx { get; set; }
+
+        public enum EditionType
+        {
+            Standard,
+            Datacenter
+        }
+
+        public void SetEdition(string edition)
+        {
+            EditionType editionType;
+            if (Enum.TryParse(edition, true, out editionType))
+            {
+                Edition = editionType;
+            }
+            else
+            {
+                throw new Exception($"Unable to convert {edition} into a valid edition value of Standard or Datacenter");
+            }
+        }
+
+        public BuildVhdTask(string inputFolder, string nanoServerInstallFiles)
+        {
+            InputFolder = inputFolder;
+            NanoServerInstallFiles = nanoServerInstallFiles;
+        }
+
+        public bool Generate()
         {
             if (!Extras.IsAdministrator())
             {
@@ -26,35 +71,35 @@ namespace NanoPack
             // the New-NanoServerImage cmdlet needs the parent of the NanoServer folder,
             // if we've been given a folder called NanoServer that doesn't have a 
             // NanoServer child folder, try to use the parent.
-            var d = new DirectoryInfo(nanoServerInstallFiles);
-            if (d.Name.ToLowerInvariant() == "nanoserver" && !Directory.Exists(Path.Combine(nanoServerInstallFiles, "NanoServer")))
+            var d = new DirectoryInfo(NanoServerInstallFiles);
+            if (d.Name.ToLowerInvariant() == "nanoserver" && !Directory.Exists(Path.Combine(NanoServerInstallFiles, "NanoServer")))
             {
-                nanoServerInstallFiles = d.Parent.FullName;
+                NanoServerInstallFiles = d.Parent.FullName;
             }
 
-            var exePath = FindExe(exeName, inputFolder);
+            var exePath = FindExe(ExeName, InputFolder);
             var appName = Path.GetFileNameWithoutExtension(exePath);
-            var vhdFilePath = Path.Combine(vhdDestinationFolder, appName + ".vhd");
+            if (string.IsNullOrWhiteSpace(VhdDestinationFolder))
+            {
+                VhdDestinationFolder = Path.Combine(Directory.GetParent(InputFolder).FullName, "Nanopacked");
+                if (!Directory.Exists(VhdDestinationFolder))
+                {
+                    Directory.CreateDirectory(VhdDestinationFolder);
+                }
+            }
+            var vhdFilePath = Path.Combine(VhdDestinationFolder, appName + (Vhdx ? ".vhdx" : ".vhd"));
             var working = PrepareWorkingDirectory();
-            if (string.IsNullOrWhiteSpace(publishFolder))
-            {
-                publishFolder = "PublishedApps\\appName";
-            }
-            if (string.IsNullOrWhiteSpace(password))
-            {
-                password = "P@ssw0rd";
-            }
 
             var variables = new VariableDictionary();
             variables.Set("appName", appName);
-            variables.Set("port", port.ToString());
+            variables.Set("port", Port.ToString());
             variables.Set("vhd", vhdFilePath);
-            variables.Set("inputFolder", inputFolder);
-            variables.Set("machineName", "aspnetcore");
-            variables.Set("nanoserverFolder", nanoServerInstallFiles);
+            variables.Set("inputFolder", InputFolder);
+            variables.Set("machineName", MachineName);
+            variables.Set("nanoserverFolder", NanoServerInstallFiles);
             variables.Set("edition", "Datacenter");
-            variables.Set("vmpassword", password);
-            variables.Set("publishFolder", publishFolder);
+            variables.Set("vmpassword", Password);
+            variables.Set("publishFolder", PublishFolder);
 
             Substitute(Path.Combine(working, "first-boot.ps1"), variables);
             Substitute(Path.Combine(working, "build-vhd.ps1"), variables);
@@ -63,9 +108,9 @@ namespace NanoPack
 
             LogMessage($"VHD created at {vhdFilePath}");
 
-            if (package)
+            if (Package)
             {
-                Package(vhdDestinationFolder, keepPackagedVhd, octopusUrl, apiKey, exePath, appName, vhdFilePath);
+                PackagAndUpload(exePath, appName, vhdFilePath);
             }
 
             LogMessage("Finished");
@@ -73,11 +118,10 @@ namespace NanoPack
             return true;
         }
 
-        private void Package(string vhdDestinationFolder, bool keepPackagedVhd, string octopusUrl, string apiKey, string exePath,
-            string appName, string vhdFilePath)
+        private void PackagAndUpload(string exePath, string appName, string vhdFilePath)
         {
             var version = GetVersionInformation(exePath);
-            var zipPath = Path.Combine(vhdDestinationFolder, $"{appName}.{version}.zip");
+            var zipPath = Path.Combine(VhdDestinationFolder, $"{appName}.{version}.zip");
             LogMessage($"Packing VHD to {zipPath}");
             
             if (File.Exists(zipPath))
@@ -93,15 +137,20 @@ namespace NanoPack
 
             LogMessage($"VHD packaged to {zipPath}");
 
-            if (!keepPackagedVhd)
+            if (!KeepPackagedVhd)
             {
-                LogMessage("Deleting VHD, use --keepPackagedVhd to keep");
+                LogMessage("Deleting packaged VHD, use --keepPackagedVhd to keep");
                 File.Delete(vhdFilePath);
             }
 
-            if (!string.IsNullOrWhiteSpace(octopusUrl) && !string.IsNullOrWhiteSpace(apiKey))
+            if (!string.IsNullOrWhiteSpace(OctopusUrl) && !string.IsNullOrWhiteSpace(ApiKey))
             {
-                OctoPusher.Upload(octopusUrl, apiKey, zipPath, LogMessage);
+                OctoPusher.Upload(OctopusUrl, ApiKey, zipPath, LogMessage);
+                if (!KeepUploadedZip)
+                {
+                    LogMessage("Deleting zip that has been sent to Octopus, use --keepUploadedZip to keep");
+                    File.Delete(zipPath);
+                }
             }
         }
 
