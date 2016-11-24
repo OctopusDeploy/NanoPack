@@ -13,25 +13,8 @@ using System.Net;
 
 namespace NanoPack
 {
-    internal class BuildVhdTask : AbstractTask
+    internal class BuildVhdTask
     {
-        // Placeholder to be roughly the shape of a Microsoft Build Task if we need to port
-        //public string VhdDestinationFolder { get; set; }
-        //public string AppName { get; set; }
-        //public string PublishedAppFolder { get; set; }
-        //public string NanoServerInstallFiles { get; set; }
-        //public string ExeName { get; set; }
-        //public int Port { get; set; }
-        //public bool Package { get; set; }
-        //public bool KeepPackagedVhd { get; set; }
-        //public string OctopusUrl { get; set; }
-        //public string ApiKey { get; set; }
-
-        public override bool Execute()
-        {
-            return false; //Generate(VhdDestinationFolder, AppName, NanoServerInstallFiles, ExeName, Port, Package, KeepPackagedVhd, OctopusUrl, ApiKey);
-        }
-
         public bool Generate(string vhdDestinationFolder, string inputFolder, string nanoServerInstallFiles, string exeName, int port, bool package, bool keepPackagedVhd, string octopusUrl, string apiKey, string publishFolder, string password)
         {
             if (!Extras.IsAdministrator())
@@ -93,10 +76,10 @@ namespace NanoPack
         private void Package(string vhdDestinationFolder, bool keepPackagedVhd, string octopusUrl, string apiKey, string exePath,
             string appName, string vhdFilePath)
         {
-            LogMessage($"Packing VHD");
             var version = GetVersionInformation(exePath);
             var zipPath = Path.Combine(vhdDestinationFolder, $"{appName}.{version}.zip");
-
+            LogMessage($"Packing VHD to {zipPath}");
+            
             if (File.Exists(zipPath))
             {
                 File.Delete(zipPath);
@@ -197,6 +180,11 @@ namespace NanoPack
             var result = variables.Evaluate(file, out errors);
             File.WriteAllText(fileName, result, Encoding.ASCII);
             return errors;
+        }
+
+        void LogMessage(string message)
+        {
+            Console.WriteLine($"NanoPack: {message}");
         }
     }
 }
