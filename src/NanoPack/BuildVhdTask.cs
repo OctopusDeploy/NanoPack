@@ -35,6 +35,8 @@ namespace NanoPack
         public EditionType Edition { get; private set; } = EditionType.Datacenter;
         public bool Vhdx { get; set; }
         public string ScriptPaths { get; set; }
+        public string Additional { get; set; }
+        public string MaxSize { get; set; } = "4GB";
 
         public enum EditionType
         {
@@ -102,6 +104,8 @@ namespace NanoPack
             variables.Set("vmpassword", Password);
             variables.Set("publishFolder", PublishFolder);
             variables.Set("firstBootScripts", ScriptPaths);
+            variables.Set("additional", Additional);
+            variables.Set("maxSize", MaxSize);
 
             Substitute(Path.Combine(working, "first-boot.ps1"), variables);
             Substitute(Path.Combine(working, "build-vhd.ps1"), variables);

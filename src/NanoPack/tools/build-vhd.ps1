@@ -4,10 +4,11 @@ $publishFolder = '#{publishFolder}'
 $machineName = '#{machineName}'
 $nanoserverFolder = '#{nanoServerFolder}'
 $edition = '#{edition}'
-$Password='#{vmpassword}'
-$FirstBootScripts = '#{firstBootScripts}'
+$password='#{vmpassword}'
+$firstBootScripts = '#{firstBootScripts}'
+$additional = '#{additional}'
 $ErrorActionPreference = "Stop"
-$SecurePassword=(ConvertTo-Securestring -asplaintext -force $Password)
+
 
 Function Write-NanoLog {
     Param ([string]$message)
@@ -19,23 +20,25 @@ If (Test-Path $vhd){
 	Remove-Item $vhd
 }
 
-Write-NanoLog "Creating Nanoserver VHD with settings: vhd: $vhd, inputFolder: $inputFolder, publishFolder: $publishFolder, machineName: $machineName, nanoServerFolder: $nanoserverFolder, edition: $edition."
-
 Write-NanoLog "Importing NanoServerImageGenerator"
 Import-Module -Name $nanoserverFolder\Nanoserver\NanoServerImageGenerator\NanoServerImageGenerator
 
 Write-NanoLog "Creating VHD at $vhd, this may take a while"
-New-NanoServerImage `
-    -MediaPath $nanoserverFolder `
-    -Edition $edition `
-    -DeploymentType Guest `
-    -TargetPath $vhd `
-    -AdministratorPassword $SecurePassword `
-    -EnableRemoteManagementPort `
-    -ComputerName $machineName `
-    -SetupCompleteCommand ('PowerShell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Unrestricted -Command "& { %SystemDrive%\first-boot.ps1 }"') `
-    -CopyPath (".\first-boot.ps1") `
-    -LogPath ".\logs"
+$command = "New-NanoServerImage "
+$command += "-MediaPath $nanoserverFolder " 
+$command += "-Edition $edition " 
+$command += "-DeploymentType Guest " 
+$command += "-TargetPath $vhd "
+$command += "-AdministratorPassword (ConvertTo-Securestring -asplaintext -force $password) "
+$command += "-EnableRemoteManagementPort "
+$command += "-ComputerName $machineName "
+$command += "-SetupCompleteCommand ('PowerShell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Unrestricted -Command ""& { %SystemDrive%\first-boot.ps1 }""') "
+$command += "-LogPath "".\logs"" "
+$command +- "-MaxSize $maxSize "
+$command += "$additional "
+
+Write-NanoLog ("Command is {0}" -f ($command -replace $password, "*********"))
+Invoke-Expression $command
 
 Write-NanoLog "Mounting VHD"
 $mountPath = ".\mount"
@@ -47,9 +50,13 @@ Try
 	Write-NanoLog "Installing IIS to VHD"
     Add-WindowsPackage -Path $mountPath -PackagePath $nanoserverFolder\NanoServer\Packages\Microsoft-NanoServer-IIS-Package.cab
 
+	#Don't use the New-NanoServerImage -CopyPath command so that users can override it
 	Write-NanoLog "Copying additional AspNetCore files"
 	Copy-Item -Path .\aspnetcore.dll -Destination $mountPath\windows\system32\inetsrv
     Copy-Item -Path .\aspnetcore_schema.xml -Destination $mountPath\windows\system32\inetsrv\config\schema
+
+	Write-NanoLog "Copying main first-boot script"
+	Copy-Item -Path .\first-boot.ps1 -Destination $mountPath
 
 	Write-NanoLog "Copying application files to VHD"
 	$appPath = Join-Path -Path $mountPath -ChildPath $publishFolder
@@ -57,7 +64,7 @@ Try
 	robocopy $inputFolder $appPath /E
 
 	New-Item -ItemType directory -Path $mountPath\FirstBootScripts
-	$FirstBootScripts.Split(";", [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object {
+	$firstBootScripts.Split(";", [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object {
 		Write-NanoLog "Adding $_ to VHD first-boot scripts"
 		Copy-Item -Path $_ -Destination $mountPath\FirstBootScripts
 	}
