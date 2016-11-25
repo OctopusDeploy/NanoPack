@@ -7,6 +7,8 @@ $edition = '#{edition}'
 $password='#{vmpassword}'
 $firstBootScripts = '#{firstBootScripts}'
 $additional = '#{additional}'
+$maxSize = '#{maxSize}'
+$copyPath = '#{copyPath}'
 $ErrorActionPreference = "Stop"
 
 
@@ -34,8 +36,13 @@ $command += "-EnableRemoteManagementPort "
 $command += "-ComputerName $machineName "
 $command += "-SetupCompleteCommand ('PowerShell.exe -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Unrestricted -Command ""& { %SystemDrive%\first-boot.ps1 }""') "
 $command += "-LogPath "".\logs"" "
-$command +- "-MaxSize $maxSize "
-$command += "$additional "
+$command += "-MaxSize $maxSize "
+If($copyPath)
+{
+	#eval copy path as it needs to be a powershell array or hashmap
+	$command += "-CopyPath (Invoke-Expression $copyPath) "
+}
+$command += $additional
 
 Write-NanoLog ("Command is {0}" -f ($command -replace $password, "*********"))
 Invoke-Expression $command

@@ -37,6 +37,7 @@ namespace NanoPack
         public string ScriptPaths { get; set; }
         public string Additional { get; set; }
         public string MaxSize { get; set; } = "4GB";
+        public string CopyPath { get; set; }
 
         public enum EditionType
         {
@@ -70,6 +71,8 @@ namespace NanoPack
                 LogMessage("This application must be run with elevated privileges");
                 return false;
             }
+
+            CheckWebConfig();
 
             // the New-NanoServerImage cmdlet needs the parent of the NanoServer folder,
             // if we've been given a folder called NanoServer that doesn't have a 
@@ -106,6 +109,7 @@ namespace NanoPack
             variables.Set("firstBootScripts", ScriptPaths);
             variables.Set("additional", Additional);
             variables.Set("maxSize", MaxSize);
+            variables.Set("copyPath", CopyPath);
 
             Substitute(Path.Combine(working, "first-boot.ps1"), variables);
             Substitute(Path.Combine(working, "build-vhd.ps1"), variables);
@@ -122,6 +126,21 @@ namespace NanoPack
             LogMessage("Finished");
 
             return true;
+        }
+
+        private void CheckWebConfig()
+        {
+            var webConfigPath = Path.Combine(InputFolder, "web.config");
+            if (!File.Exists(webConfigPath))
+            {
+                throw new Exception($"No web.config found in {InputFolder}. The folder should contain a published ASP.NET Core application");
+            }
+
+            var config = File.ReadAllText(webConfigPath);
+            if (config.Contains("%LAUNCHER_PATH%"))
+            {
+                throw new Exception("web.config still contains %LAUNCHER_PATH%. Use dotnet publish-iis in your project.json post-publish scripts, or set this manually");
+            }
         }
 
         private void PackagAndUpload(string exePath, string appName, string vhdFilePath)
