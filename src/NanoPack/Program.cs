@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.CommandLineUtils;
 
 namespace NanoPack
@@ -30,7 +28,7 @@ namespace NanoPack
             var password =        app.Option("     --password", "The Administrator password of the resulting NanoServer image (optional). Default is P@ssw0rd", CommandOptionType.SingleValue);
             var vhdx =            app.Option("-x | --vhdx", "Build a VHDX rather than a VHD", CommandOptionType.NoValue);
             var edition =         app.Option("     --edition", "The windows server edition. Standard or Datacenter", CommandOptionType.SingleValue);
-            var scripts =         app.Option("-s | --firstbootscript", "Path to a PowerShell script that will be copied to the VHD and run on its first boot. Multiple allowed.", CommandOptionType.MultipleValue);
+            var scripts =         app.Option("-s | --firstBootScript", "Path to a PowerShell script that will be copied to the VHD and run on its first boot. Multiple allowed.", CommandOptionType.MultipleValue);
             var copyPath =        app.Option("   | --copyPath", "Copy files to your VHD. This arguement is passed through to the  New-NanoServerImage cmdlet and must be a string that evals to a PowerShell array or hash map.", CommandOptionType.SingleValue);
             var additional =      app.Option("-a | --additional", "Extra options to pass to New-NanoServerImage, for example: -a \"-Ipv4Address \\\"172.21.22.101\\\"\". Multiple allowed.", CommandOptionType.MultipleValue);
 
@@ -97,18 +95,18 @@ namespace NanoPack
                     }
                     task.ScriptPaths = string.Join(";", foundScripts);
 
-                    task.CopyPath = "\"" + copyPath.Value().Replace("\"", "\"\"") + "\"";
+                    if (copyPath.HasValue())
+                    {
+                        task.CopyPath = "\"" + copyPath.Value().Replace("\"", "\"\"") + "\"";
+                    }
                     task.Additional = string.Join(" ", additional.Values);
 
-                    task.Generate();
+                    return task.Generate();
                 }
                 else
                 {
                     app.ShowHelp();
                 }
-
-                if (Debugger.IsAttached)
-                    Console.ReadKey();
 
                 return 0;
             });

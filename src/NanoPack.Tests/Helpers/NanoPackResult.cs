@@ -83,5 +83,13 @@ namespace NanoPack.Tests.Helpers
             var allOutput = string.Join(separator, captured.Errors);
             Assert.That(allOutput, Does.Contain(expectedOutput));
         }
+
+        public void Dump()
+        {
+            foreach (var message in captured.AllMessages)
+            {
+                Console.WriteLine(message);
+            }
+        }
     }
 }

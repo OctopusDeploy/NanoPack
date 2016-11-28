@@ -1,18 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Xml.Linq;
-using NanoPack;
 using Octostache;
-using System.Linq;
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Linq.Expressions;
-using System.Net;
-using System.Runtime.InteropServices;
-using Sprache;
 
 namespace NanoPack
 {
@@ -20,9 +9,10 @@ namespace NanoPack
     {
         private readonly IPowerShell _powerShell;
         private readonly IPackager _packager;
+        private string _working;
         public string VhdDestinationFolder { get; set; }
-        public string InputFolder { get; set; }
-        public string NanoServerInstallFiles { get; set; }
+        public string InputFolder { get; private set; }
+        public string NanoServerInstallFiles { get; private set; }
         public int Port { get; set; } = 80;
         public string ExeName { get; set; }
         public string PublishFolder { get; set; } = "PublishedApp";
@@ -62,14 +52,14 @@ namespace NanoPack
             NanoServerInstallFiles = nanoServerInstallFiles;
         }
 
-        public bool Generate()
+        public int Generate()
         {
             try
             {
-                if (!Extras.IsAdministrator())
+                if (!Util.IsAdministrator())
                 {
-                    LogMessage("This application must be run with elevated privileges");
-                    return false;
+                    LogError("This application must be run with elevated privileges");
+                    return 1;
                 }
 
                 CheckWebConfig();
@@ -78,12 +68,13 @@ namespace NanoPack
                 // if we've been given a folder called NanoServer that doesn't have a 
                 // NanoServer child folder, try to use the parent.
                 var d = new DirectoryInfo(NanoServerInstallFiles);
-                if (d.Name.ToLowerInvariant() == "nanoserver" && !Directory.Exists(Path.Combine(NanoServerInstallFiles, "NanoServer")))
+                if (d.Name.ToLowerInvariant() == "nanoserver" &&
+                    !Directory.Exists(Path.Combine(NanoServerInstallFiles, "NanoServer")))
                 {
                     NanoServerInstallFiles = d.Parent.FullName;
                 }
 
-                var exePath = FindExe(ExeName, InputFolder);
+                var exePath = Util.FindExe(ExeName, InputFolder);
                 var appName = Path.GetFileNameWithoutExtension(exePath);
                 if (string.IsNullOrWhiteSpace(VhdDestinationFolder))
                 {
@@ -94,7 +85,7 @@ namespace NanoPack
                     }
                 }
                 var vhdFilePath = Path.Combine(VhdDestinationFolder, appName + (Vhdx ? ".vhdx" : ".vhd"));
-                var working = PrepareWorkingDirectory();
+                _working = PrepareWorkingDirectory();
 
                 var variables = new VariableDictionary();
                 variables.Set("appName", appName);
@@ -103,7 +94,7 @@ namespace NanoPack
                 variables.Set("inputFolder", InputFolder);
                 variables.Set("machineName", MachineName);
                 variables.Set("nanoserverFolder", NanoServerInstallFiles);
-                variables.Set("edition", "Datacenter");
+                variables.Set("edition", Edition.ToString());
                 variables.Set("vmpassword", Password);
                 variables.Set("publishFolder", PublishFolder);
                 variables.Set("firstBootScripts", ScriptPaths);
@@ -111,10 +102,10 @@ namespace NanoPack
                 variables.Set("maxSize", MaxSize);
                 variables.Set("copyPath", CopyPath);
 
-                Substitute(Path.Combine(working, "first-boot.ps1"), variables);
-                Substitute(Path.Combine(working, "build-vhd.ps1"), variables);
+                Util.Substitute(Path.Combine(_working, "first-boot.ps1"), variables);
+                Util.Substitute(Path.Combine(_working, "build-vhd.ps1"), variables);
 
-                _powerShell.RunFile(working, "build-vhd.ps1");
+                _powerShell.RunFile(_working, "build-vhd.ps1");
 
                 LogMessage($"VHD created at {vhdFilePath}");
 
@@ -122,12 +113,19 @@ namespace NanoPack
 
                 LogMessage("Finished");
 
-                return true;
+                return 0;
             }
             catch (NanoPackException e)
             {
-                LogMessage(e.Message);
-                return false;
+                LogError(e.Message);
+                return 1;
+            }
+            finally
+            {
+                if (Directory.Exists(_working))
+                {
+                    Directory.Delete(_working, recursive: true);
+                }
             }
         }
 
@@ -146,47 +144,9 @@ namespace NanoPack
             }
         }
 
-        private static string FindExe(string exeName, string publishedAppFolder)
-        {
-            string path;
-            if (string.IsNullOrWhiteSpace(exeName))
-            {
-                var paths = Directory.GetFiles(publishedAppFolder, "*.exe").ToArray();
-                if (paths.Length == 1)
-                {
-                    path = paths[0];
-                }
-                else if (paths.Length == 0)
-                {
-                    throw new NanoPackException($"No .exe found in the Published App Folder at {publishedAppFolder}. Application must be a self-contained ASP.NET Core app.");
-                }
-                else
-                {
-                    throw new NanoPackException($"More than one .exe found in the Published App Folder at {publishedAppFolder}. Please specify which .exe to inspect for version and naming information with the --exeName parameter.");
-                }
-            }
-            else
-            {
-                path = Path.Combine(publishedAppFolder, exeName);
-                if (!File.Exists(path))
-                {
-                    throw new NanoPackException($"No .exe found at {path} please check your --exePath setting.");
-                }
-            }
-
-            return path;
-        }
-
-        private static string GetTemporaryDirectory()
-        {
-            var tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(tempDirectory);
-            return tempDirectory;
-        }
-
         private string PrepareWorkingDirectory()
         {
-            var tempDir = GetTemporaryDirectory();
+            var tempDir = Util.GetTemporaryDirectory();
             LogMessage($"Working directory is {tempDir}");
             var assembly = typeof(BuildVhdTask).GetTypeInfo().Assembly;
             foreach (var resourceName in assembly.GetManifestResourceNames())
@@ -204,18 +164,14 @@ namespace NanoPack
             return tempDir;
         }
 
-        private static string Substitute(string fileName, VariableDictionary variables)
-        {
-            string errors;
-            var file = File.ReadAllText(fileName);
-            var result = variables.Evaluate(file, out errors);
-            File.WriteAllText(fileName, result, Encoding.ASCII);
-            return errors;
-        }
-
         void LogMessage(string message)
         {
             Console.WriteLine($"NanoPack: {message}");
+        }
+
+        void LogError(string message)
+        {
+            Console.Error.WriteLine($"NanoPack: {message}");
         }
     }
 }

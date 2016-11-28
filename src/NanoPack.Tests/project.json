@@ -19,7 +19,13 @@
       },
       "buildOptions": {
         "emitEntryPoint": true,
-        "debugType": "portable"
+        "debugType": "portable",
+        "copyToOutput": {
+          "include": [
+            "TestApp/**",
+            "TestFiles/**"
+          ]
+        }
       }
     }
   },

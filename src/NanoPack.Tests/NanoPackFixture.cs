@@ -3,12 +3,20 @@ using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using NanoPack.Tests.Helpers;
-using NUnit.Framework;
 
 namespace NanoPack.Tests
 {
     public abstract class NanoPackFixture
     {
+        public static readonly string AssemblyLocalPath = typeof(NanoPackFixture).GetTypeInfo().Assembly.FullLocalPath();
+        public static readonly string CurrentWorkingDirectory = Path.GetDirectoryName(AssemblyLocalPath);
+
+        public static string GetTestPath(params string[] paths)
+        {
+            return Path.Combine(CurrentWorkingDirectory, Path.Combine(paths));
+        }
+
+
         protected CommandLine NanoPack()
         {
             var folder = Path.GetDirectoryName(typeof(Program).GetTypeInfo().Assembly.FullLocalPath());
@@ -22,23 +30,6 @@ namespace NanoPack.Tests
             var runner = new CommandLineRunner(capture);
             var result = runner.Execute(command.Build());
             return new NanoPackResult(result.ExitCode, capture);
-        }
-    }
-
-    public class ShowHelpFixture : NanoPackFixture
-    {
-        [Test]
-        public void ShouldShowHelpWithNoArguments()
-        {
-            var result = Invoke(NanoPack());
-            result.AssertOutput("Usage:  [options]");
-        }
-
-        [Test]
-        public void ShouldShowHelpWithNoMediaPath()
-        {
-            var result = Invoke(NanoPack().Flag("vhdx"));
-            result.AssertOutput("Usage:  [options]");
         }
     }
 }

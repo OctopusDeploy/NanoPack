@@ -115,3 +115,4 @@ built-packages/**
 **/.vscode
 artifacts/
 **/project.lock.json
+.idea/

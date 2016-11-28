@@ -93,3 +93,5 @@ $acl.SetAccessRuleProtection($True, $False)
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\Authenticated Users","FullControl", "Allow")
 $acl.AddAccessRule($rule)
 Set-Acl $vhd $acl
+
+exit 0

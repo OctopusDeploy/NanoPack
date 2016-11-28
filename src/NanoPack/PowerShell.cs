@@ -11,7 +11,7 @@ namespace NanoPack
         void RunCommands(string directory, params string[] commands);
     }
 
-    internal class PowerShell : IPowerShell
+    public class PowerShell : IPowerShell
     {
         public void RunFile(string directory, string file, Dictionary<string, string> parameters = null)
         {
