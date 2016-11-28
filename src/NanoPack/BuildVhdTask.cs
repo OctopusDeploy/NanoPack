@@ -18,16 +18,13 @@ namespace NanoPack
 {
     internal class BuildVhdTask
     {
+        private readonly IPowerShell _powerShell;
+        private readonly IPackager _packager;
         public string VhdDestinationFolder { get; set; }
         public string InputFolder { get; set; }
         public string NanoServerInstallFiles { get; set; }
         public int Port { get; set; } = 80;
         public string ExeName { get; set; }
-        public string OctopusUrl { get; set; }
-        public bool Package { get; set; }
-        public bool KeepPackagedVhd { get; set; }
-        public bool KeepUploadedZip { get; set; }
-        public string ApiKey { get; set; }
         public string PublishFolder { get; set; } = "PublishedApp";
         public string Password { get; set; } = "P@ssw0rd";
         public string MachineName { get; set; } = "NanoServer";
@@ -57,8 +54,10 @@ namespace NanoPack
             }
         }
 
-        public BuildVhdTask(string inputFolder, string nanoServerInstallFiles)
+        public BuildVhdTask(IPowerShell powerShell, IPackager packager, string inputFolder, string nanoServerInstallFiles)
         {
+            _powerShell = powerShell;
+            _packager = packager;
             InputFolder = inputFolder;
             NanoServerInstallFiles = nanoServerInstallFiles;
         }
@@ -115,14 +114,11 @@ namespace NanoPack
                 Substitute(Path.Combine(working, "first-boot.ps1"), variables);
                 Substitute(Path.Combine(working, "build-vhd.ps1"), variables);
 
-                PowerShell.RunFile(working, "build-vhd.ps1");
+                _powerShell.RunFile(working, "build-vhd.ps1");
 
                 LogMessage($"VHD created at {vhdFilePath}");
 
-                if (Package)
-                {
-                    PackagAndUpload(exePath, appName, vhdFilePath);
-                }
+                _packager.PackageAndUpload(exePath, appName, VhdDestinationFolder, vhdFilePath, LogMessage);
 
                 LogMessage("Finished");
 
@@ -147,42 +143,6 @@ namespace NanoPack
             if (config.Contains("%LAUNCHER_PATH%"))
             {
                 throw new NanoPackException("web.config still contains %LAUNCHER_PATH%. Use dotnet publish-iis in your project.json post-publish scripts, or set this manually");
-            }
-        }
-
-        private void PackagAndUpload(string exePath, string appName, string vhdFilePath)
-        {
-            var version = GetVersionInformation(exePath);
-            var zipPath = Path.Combine(VhdDestinationFolder, $"{appName}.{version}.zip");
-            LogMessage($"Packing VHD to {zipPath}");
-            
-            if (File.Exists(zipPath))
-            {
-                File.Delete(zipPath);
-            }
-
-            using (var fs = new FileStream(zipPath, FileMode.Create))
-            using (var arch = new ZipArchive(fs, ZipArchiveMode.Create))
-            {
-                arch.CreateEntryFromFile(vhdFilePath, Path.GetFileName(vhdFilePath), CompressionLevel.Optimal);
-            }
-
-            LogMessage($"VHD packaged to {zipPath}");
-
-            if (!KeepPackagedVhd)
-            {
-                LogMessage("Deleting packaged VHD, use --keepPackagedVhd to keep");
-                File.Delete(vhdFilePath);
-            }
-
-            if (!string.IsNullOrWhiteSpace(OctopusUrl) && !string.IsNullOrWhiteSpace(ApiKey))
-            {
-                OctoPusher.Upload(OctopusUrl, ApiKey, zipPath, LogMessage);
-                if (!KeepUploadedZip)
-                {
-                    LogMessage("Deleting zip that has been sent to Octopus, use --keepUploadedZip to keep");
-                    File.Delete(zipPath);
-                }
             }
         }
 
@@ -215,16 +175,6 @@ namespace NanoPack
             }
 
             return path;
-        }
-
-        private string GetVersionInformation(string exePath)
-        {
-            // .NET Core doesn't seem to set the version on a published exe as of 1.0.1, only it's underlying dll.
-            var dllPath = exePath.Remove(exePath.Length - 3) + "dll";
-            var checkPath = File.Exists(dllPath) ? dllPath : exePath;
-            LogMessage($"Extracting version information from {checkPath}");
-            var version = FileVersionInfo.GetVersionInfo(checkPath);
-            return version.ProductVersion;
         }
 
         private static string GetTemporaryDirectory()

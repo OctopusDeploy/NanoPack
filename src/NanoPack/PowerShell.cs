@@ -5,9 +5,15 @@ using System.Text;
 
 namespace NanoPack
 {
-    internal static class PowerShell
+    internal interface IPowerShell
     {
-        internal static void RunFile(string directory, string file, Dictionary<string, string> parameters = null)
+        void RunFile(string directory, string file, Dictionary<string, string> parameters = null);
+        void RunCommands(string directory, params string[] commands);
+    }
+
+    internal class PowerShell : IPowerShell
+    {
+        public void RunFile(string directory, string file, Dictionary<string, string> parameters = null)
         {
             var arguments = new StringBuilder("-NoProfile -NoLogo -NonInteractive -ExecutionPolicy Unrestricted -File \"" + file + "\"");
             if (parameters != null)
@@ -38,7 +44,7 @@ namespace NanoPack
                 throw new NanoPackException($"Script {file} failed with error {errors}");
         }
 
-        internal static void RunCommands(string directory, params string[] commands)
+        public void RunCommands(string directory, params string[] commands)
         {
             var arguments = string.Join("; ", commands).Replace("\"", "\\\"");
             arguments = "-NoProfile -NoLogo -NonInteractive -ExecutionPolicy Unrestricted -Command \"& { $ErrorActionPreference = \\\"Stop\\\"; " + arguments + " }\"";

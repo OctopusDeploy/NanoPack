@@ -40,7 +40,8 @@ namespace NanoPack
             {
                 if (inputPath.HasValue() && nanoServerPath.HasValue())
                 {
-                    var task = new BuildVhdTask(inputPath.Value(), nanoServerPath.Value());
+                    var packager = new Packager(new Pusher(octopusUrl.Value(), apiKey.Value()), package.HasValue(), keepPackagedVhd.HasValue(), keepUploadedZip.HasValue());
+                    var task = new BuildVhdTask(new PowerShell(), packager, inputPath.Value(), nanoServerPath.Value());
 
                     if (port.HasValue())
                     {
@@ -78,11 +79,6 @@ namespace NanoPack
                     {
                         task.MaxSize = maxSize.Value();
                     }
-                    task.Package = package.HasValue();
-                    task.KeepPackagedVhd = keepPackagedVhd.HasValue();
-                    task.KeepUploadedZip = keepUploadedZip.HasValue();
-                    task.OctopusUrl = octopusUrl.Value();
-                    task.ApiKey = apiKey.Value();
                     if (password.HasValue())
                     {
                         task.Password = password.Value();

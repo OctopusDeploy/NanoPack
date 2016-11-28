@@ -10,5 +10,9 @@ namespace NanoPack
         public NanoPackException(string message):base(message)
         {
         }
+
+        public NanoPackException(string message, Exception ex) : base(message, ex)
+        {
+        }
     }
 }

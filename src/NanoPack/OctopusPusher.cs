@@ -5,18 +5,35 @@ using System.Text;
 
 namespace NanoPack
 {
-    public static class OctoPusher
+    internal interface IPusher
     {
-        public static void Upload(string octopusUrl, string apiKey, string packageFilePath, Action<string> log, bool replaceExisting = false)
+        void Upload(string packageFilePath, Action<string> log, bool replaceExisting = false);
+        bool CanPush { get; }
+    }
+
+    internal class Pusher : IPusher
+    {
+        private readonly string _octopusUrl;
+        private readonly string _apiKey;
+
+        public Pusher(string octopusUrl, string apiKey)
         {
-            var packageUrl = octopusUrl + "/api/packages/raw?replace=" + replaceExisting;
+            _octopusUrl = octopusUrl;
+            _apiKey = apiKey;
+        }
+
+        public bool CanPush => !string.IsNullOrWhiteSpace(_octopusUrl) && !string.IsNullOrWhiteSpace(_apiKey);
+
+        public void Upload(string packageFilePath, Action<string> log, bool replaceExisting = false)
+        {
+            var packageUrl = _octopusUrl + "/api/packages/raw?replace=" + replaceExisting;
             log($"Uploading {packageFilePath} to {packageUrl}");
 
             var webRequest = (HttpWebRequest)WebRequest.Create(packageUrl);
             webRequest.Accept = "application/json";
             webRequest.ContentType = "application/json";
             webRequest.Method = "POST";
-            webRequest.Headers["X-Octopus-ApiKey"] = apiKey;
+            webRequest.Headers["X-Octopus-ApiKey"] = _apiKey;
 
             using (var packageFileStream = new FileStream(packageFilePath, FileMode.Open))
             {
