@@ -22,7 +22,6 @@ namespace NanoPack
         public string InputFolder { get; set; }
         public string NanoServerInstallFiles { get; set; }
         public int Port { get; set; } = 80;
-
         public string ExeName { get; set; }
         public string OctopusUrl { get; set; }
         public bool Package { get; set; }
@@ -54,7 +53,7 @@ namespace NanoPack
             }
             else
             {
-                throw new Exception($"Unable to convert {edition} into a valid edition value of Standard or Datacenter");
+                throw new NanoPackException($"Unable to convert {edition} into a valid edition value of Standard or Datacenter");
             }
         }
 
@@ -66,66 +65,74 @@ namespace NanoPack
 
         public bool Generate()
         {
-            if (!Extras.IsAdministrator())
+            try
             {
-                LogMessage("This application must be run with elevated privileges");
+                if (!Extras.IsAdministrator())
+                {
+                    LogMessage("This application must be run with elevated privileges");
+                    return false;
+                }
+
+                CheckWebConfig();
+
+                // the New-NanoServerImage cmdlet needs the parent of the NanoServer folder,
+                // if we've been given a folder called NanoServer that doesn't have a 
+                // NanoServer child folder, try to use the parent.
+                var d = new DirectoryInfo(NanoServerInstallFiles);
+                if (d.Name.ToLowerInvariant() == "nanoserver" && !Directory.Exists(Path.Combine(NanoServerInstallFiles, "NanoServer")))
+                {
+                    NanoServerInstallFiles = d.Parent.FullName;
+                }
+
+                var exePath = FindExe(ExeName, InputFolder);
+                var appName = Path.GetFileNameWithoutExtension(exePath);
+                if (string.IsNullOrWhiteSpace(VhdDestinationFolder))
+                {
+                    VhdDestinationFolder = Path.Combine(Directory.GetParent(InputFolder).FullName, "Nanopacked");
+                    if (!Directory.Exists(VhdDestinationFolder))
+                    {
+                        Directory.CreateDirectory(VhdDestinationFolder);
+                    }
+                }
+                var vhdFilePath = Path.Combine(VhdDestinationFolder, appName + (Vhdx ? ".vhdx" : ".vhd"));
+                var working = PrepareWorkingDirectory();
+
+                var variables = new VariableDictionary();
+                variables.Set("appName", appName);
+                variables.Set("port", Port.ToString());
+                variables.Set("vhd", vhdFilePath);
+                variables.Set("inputFolder", InputFolder);
+                variables.Set("machineName", MachineName);
+                variables.Set("nanoserverFolder", NanoServerInstallFiles);
+                variables.Set("edition", "Datacenter");
+                variables.Set("vmpassword", Password);
+                variables.Set("publishFolder", PublishFolder);
+                variables.Set("firstBootScripts", ScriptPaths);
+                variables.Set("additional", Additional);
+                variables.Set("maxSize", MaxSize);
+                variables.Set("copyPath", CopyPath);
+
+                Substitute(Path.Combine(working, "first-boot.ps1"), variables);
+                Substitute(Path.Combine(working, "build-vhd.ps1"), variables);
+
+                PowerShell.RunFile(working, "build-vhd.ps1");
+
+                LogMessage($"VHD created at {vhdFilePath}");
+
+                if (Package)
+                {
+                    PackagAndUpload(exePath, appName, vhdFilePath);
+                }
+
+                LogMessage("Finished");
+
+                return true;
+            }
+            catch (NanoPackException e)
+            {
+                LogMessage(e.Message);
                 return false;
             }
-
-            CheckWebConfig();
-
-            // the New-NanoServerImage cmdlet needs the parent of the NanoServer folder,
-            // if we've been given a folder called NanoServer that doesn't have a 
-            // NanoServer child folder, try to use the parent.
-            var d = new DirectoryInfo(NanoServerInstallFiles);
-            if (d.Name.ToLowerInvariant() == "nanoserver" && !Directory.Exists(Path.Combine(NanoServerInstallFiles, "NanoServer")))
-            {
-                NanoServerInstallFiles = d.Parent.FullName;
-            }
-
-            var exePath = FindExe(ExeName, InputFolder);
-            var appName = Path.GetFileNameWithoutExtension(exePath);
-            if (string.IsNullOrWhiteSpace(VhdDestinationFolder))
-            {
-                VhdDestinationFolder = Path.Combine(Directory.GetParent(InputFolder).FullName, "Nanopacked");
-                if (!Directory.Exists(VhdDestinationFolder))
-                {
-                    Directory.CreateDirectory(VhdDestinationFolder);
-                }
-            }
-            var vhdFilePath = Path.Combine(VhdDestinationFolder, appName + (Vhdx ? ".vhdx" : ".vhd"));
-            var working = PrepareWorkingDirectory();
-
-            var variables = new VariableDictionary();
-            variables.Set("appName", appName);
-            variables.Set("port", Port.ToString());
-            variables.Set("vhd", vhdFilePath);
-            variables.Set("inputFolder", InputFolder);
-            variables.Set("machineName", MachineName);
-            variables.Set("nanoserverFolder", NanoServerInstallFiles);
-            variables.Set("edition", "Datacenter");
-            variables.Set("vmpassword", Password);
-            variables.Set("publishFolder", PublishFolder);
-            variables.Set("firstBootScripts", ScriptPaths);
-            variables.Set("additional", Additional);
-            variables.Set("maxSize", MaxSize);
-            variables.Set("copyPath", CopyPath);
-
-            Substitute(Path.Combine(working, "first-boot.ps1"), variables);
-            Substitute(Path.Combine(working, "build-vhd.ps1"), variables);
-
-            PowerShell.RunFile(working, "build-vhd.ps1");
-
-            LogMessage($"VHD created at {vhdFilePath}");
-
-            if (Package)
-            {
-                PackagAndUpload(exePath, appName, vhdFilePath);
-            }
-
-            LogMessage("Finished");
-
-            return true;
         }
 
         private void CheckWebConfig()
@@ -133,13 +140,13 @@ namespace NanoPack
             var webConfigPath = Path.Combine(InputFolder, "web.config");
             if (!File.Exists(webConfigPath))
             {
-                throw new Exception($"No web.config found in {InputFolder}. The folder should contain a published ASP.NET Core application");
+                throw new NanoPackException($"No web.config found in {InputFolder}. The folder should contain a published ASP.NET Core application");
             }
 
             var config = File.ReadAllText(webConfigPath);
             if (config.Contains("%LAUNCHER_PATH%"))
             {
-                throw new Exception("web.config still contains %LAUNCHER_PATH%. Use dotnet publish-iis in your project.json post-publish scripts, or set this manually");
+                throw new NanoPackException("web.config still contains %LAUNCHER_PATH%. Use dotnet publish-iis in your project.json post-publish scripts, or set this manually");
             }
         }
 
@@ -191,11 +198,11 @@ namespace NanoPack
                 }
                 else if (paths.Length == 0)
                 {
-                    throw new Exception($"No .exe found in the Published App Folder at {publishedAppFolder}. Application must be a self-contained ASP.NET Core app.");
+                    throw new NanoPackException($"No .exe found in the Published App Folder at {publishedAppFolder}. Application must be a self-contained ASP.NET Core app.");
                 }
                 else
                 {
-                    throw new Exception($"More than one .exe found in the Published App Folder at {publishedAppFolder}. Please specify which .exe to inspect for version and naming information with the --exeName parameter.");
+                    throw new NanoPackException($"More than one .exe found in the Published App Folder at {publishedAppFolder}. Please specify which .exe to inspect for version and naming information with the --exeName parameter.");
                 }
             }
             else
@@ -203,7 +210,7 @@ namespace NanoPack
                 path = Path.Combine(publishedAppFolder, exeName);
                 if (!File.Exists(path))
                 {
-                    throw new Exception($"No .exe found at {path} please check your --exePath setting.");
+                    throw new NanoPackException($"No .exe found at {path} please check your --exePath setting.");
                 }
             }
 

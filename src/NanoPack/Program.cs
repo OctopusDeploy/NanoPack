@@ -10,7 +10,7 @@ namespace NanoPack
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             var app = new CommandLineApplication(throwOnUnexpectedArg: true);
 
@@ -38,8 +38,7 @@ namespace NanoPack
 
             app.OnExecute(() =>
             {
-                if (inputPath.HasValue() 
-                    && nanoServerPath.HasValue())
+                if (inputPath.HasValue() && nanoServerPath.HasValue())
                 {
                     var task = new BuildVhdTask(inputPath.Value(), nanoServerPath.Value());
 
@@ -118,7 +117,7 @@ namespace NanoPack
                 return 0;
             });
 
-            app.Execute(args);
+            return app.Execute(args);
         }
     }
 }

@@ -62,7 +62,7 @@ namespace NanoPack
             }
             catch (Exception ex)
             {
-                throw new Exception(string.Format("Error when attempting to execute {0}: {1}", executable, ex.Message), ex);
+                throw new NanoPackException(string.Format("Error when attempting to execute {0}: {1}", executable, ex.Message), ex);
             }
         }
     }

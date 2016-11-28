@@ -35,7 +35,7 @@ namespace NanoPack
                 });
 
             if (code != 0)
-                throw new Exception($"Script {file} failed with error {errors}");
+                throw new NanoPackException($"Script {file} failed with error {errors}");
         }
 
         internal static void RunCommands(string directory, params string[] commands)
@@ -57,7 +57,7 @@ namespace NanoPack
                 });
 
             if (code != 0)
-                throw new Exception($"Commands failed with error {errors}");
+                throw new NanoPackException($"Commands failed with error {errors}");
         }
 
         private static string GetPowerShellPath()
