@@ -24,7 +24,7 @@ namespace NanoPack
             var keepPackagedVhd = app.Option("     --keepPackagedVhd", "Do not delete the original VHD after it has been packaged with the --package option", CommandOptionType.NoValue);
             var keepUploadedZip = app.Option("     --keepUploadedZip", "Do not delete the zipped VHD after it has been uploaded to Octopus", CommandOptionType.NoValue);
             var octopusUrl =      app.Option("-u | --octopusUrl", "The URL of your Octopus server. If provided, and --package is set, NanoPack will push the packaged VHD to the built in package feed (optional)", CommandOptionType.SingleValue);
-            var apiKey =          app.Option("-k | --apiKey", "An Octopus API key with the XXX permission (required if --octopusUrl is set)", CommandOptionType.SingleValue);
+            var apiKey =          app.Option("-k | --apiKey", "An Octopus API key (required if --octopusUrl is set)", CommandOptionType.SingleValue);
             var password =        app.Option("     --password", "The Administrator password of the resulting NanoServer image (optional). Default is P@ssw0rd", CommandOptionType.SingleValue);
             var vhdx =            app.Option("-x | --vhdx", "Build a VHDX rather than a VHD", CommandOptionType.NoValue);
             var edition =         app.Option("     --edition", "The windows server edition. Standard or Datacenter", CommandOptionType.SingleValue);
