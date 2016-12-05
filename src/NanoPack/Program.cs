@@ -18,18 +18,18 @@ namespace NanoPack
             var maxSize =         app.Option("   | --maxSize <size>", "The maximum size of the VHD (optional). Default is 4GB", CommandOptionType.SingleValue);
             var publishPath =     app.Option("   | --publishPath <folder>", "The path within the VHD to copy your application to (optional). Default is /PublishedApp", CommandOptionType.SingleValue);
             var exeName =         app.Option("-e | --executableName <name>", "The name of the executable file in the publish folder to extract version information from (optional, if not provided NanoPack will scan the target folder for an executable)", CommandOptionType.SingleValue);
-            var port =            app.Option("-p | --port", "The port IIS will serve your app on (optional). Default is 80", CommandOptionType.SingleValue);
-            var machine =         app.Option("-n | --computerName", "The name of your NanoServer (optional). Default is NanoServer", CommandOptionType.SingleValue);
+            var port =            app.Option("-p | --port <port>", "The port IIS will serve your app on (optional). Default is 80", CommandOptionType.SingleValue);
+            var machine =         app.Option("-n | --computerName <name>", "The name of your NanoServer (optional). Default is NanoServer", CommandOptionType.SingleValue);
             var package =         app.Option("     --package", "Package the VHD into a Zip file with the app version in its name, ready to be pushed to Octopus", CommandOptionType.NoValue);
             var keepPackagedVhd = app.Option("     --keepPackagedVhd", "Do not delete the original VHD after it has been packaged with the --package option", CommandOptionType.NoValue);
             var keepUploadedZip = app.Option("     --keepUploadedZip", "Do not delete the zipped VHD after it has been uploaded to Octopus", CommandOptionType.NoValue);
-            var octopusUrl =      app.Option("-u | --octopusUrl", "The URL of your Octopus server. If provided, and --package is set, NanoPack will push the packaged VHD to the built in package feed (optional)", CommandOptionType.SingleValue);
-            var apiKey =          app.Option("-k | --apiKey", "An Octopus API key (required if --octopusUrl is set)", CommandOptionType.SingleValue);
-            var password =        app.Option("     --password", "The Administrator password of the resulting NanoServer image (optional). Default is P@ssw0rd", CommandOptionType.SingleValue);
+            var octopusUrl =      app.Option("-u | --octopusUrl <url>", "The URL of your Octopus server. If provided, and --package is set, NanoPack will push the packaged VHD to the built in package feed (optional)", CommandOptionType.SingleValue);
+            var apiKey =          app.Option("-k | --apiKey <key>", "An Octopus API key (required if --octopusUrl is set)", CommandOptionType.SingleValue);
+            var password =        app.Option("     --password <password>", "The Administrator password of the resulting NanoServer image (optional). Default is P@ssw0rd", CommandOptionType.SingleValue);
             var vhdx =            app.Option("-x | --vhdx", "Build a VHDX rather than a VHD", CommandOptionType.NoValue);
-            var edition =         app.Option("     --edition", "The windows server edition. Standard or Datacenter", CommandOptionType.SingleValue);
-            var scripts =         app.Option("-s | --firstBootScript", "Path to a PowerShell script that will be copied to the VHD and run on its first boot. Multiple allowed.", CommandOptionType.MultipleValue);
-            var copyPath =        app.Option("   | --copyPath", "Copy files to your VHD. This arguement is passed through to the  New-NanoServerImage cmdlet and must be a string that evals to a PowerShell array or hash map.", CommandOptionType.SingleValue);
+            var edition =         app.Option("     --edition <edition>", "The windows server edition. Standard or Datacenter", CommandOptionType.SingleValue);
+            var scripts =         app.Option("-s | --firstBootScript <path>", "Path to a PowerShell script that will be copied to the VHD and run on its first boot. Multiple allowed.", CommandOptionType.MultipleValue);
+            var copyPath =        app.Option("   | --copyPath <path object>", "Copy files to your VHD. This argument is passed through to the  New-NanoServerImage cmdlet and must be a string that evals to a PowerShell array or hash map.", CommandOptionType.SingleValue);
             var additional =      app.Option("-a | --additional", "Extra options to pass to New-NanoServerImage, for example: -a \"-Ipv4Address \\\"172.21.22.101\\\"\". Multiple allowed.", CommandOptionType.MultipleValue);
 
             app.HelpOption("-? | --help");
