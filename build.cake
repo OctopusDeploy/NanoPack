@@ -83,7 +83,7 @@ Task("Test")
 	});
 
 Task("Pack")
-    .IsDependentOn("Test")
+    .IsDependentOn("BuildTest")
     .Does(() =>
 {
     DotNetCorePack("./src/NanoPack/NanoPack.csproj", new DotNetCorePackSettings
