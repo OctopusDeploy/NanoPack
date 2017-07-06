@@ -90,10 +90,9 @@ Task("Pack")
     {
         Configuration = configuration,
         OutputDirectory = artifactsDir,
-        NoBuild = true
+        NoBuild = true,
+        ArgumentCustomization = args => args.Append($"/p:Version={nugetVersion}")
     });
-
-    DeleteFiles(artifactsDir + "*symbols*");
 });
 
 Task("Publish")
