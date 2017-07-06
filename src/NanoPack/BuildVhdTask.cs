@@ -151,9 +151,10 @@ namespace NanoPack
             var assembly = typeof(BuildVhdTask).GetTypeInfo().Assembly;
             foreach (var resourceName in assembly.GetManifestResourceNames())
             {
-                LogMessage($"Extracting {resourceName} to {tempDir}");
+                var destFileName = Path.Combine(tempDir, resourceName.Replace("NanoPack.tools.", ""));
+                LogMessage($"Extracting {resourceName} to {destFileName}");
                 using (var stream = assembly.GetManifestResourceStream(resourceName))
-                using (var file = new FileStream(Path.Combine(tempDir, resourceName), FileMode.Create))
+                using (var file = new FileStream(destFileName, FileMode.Create))
                 {
                     for (var i = 0; i < stream.Length; i++)
                     {

@@ -15,6 +15,7 @@ namespace NanoPack.Tests.Helpers
         {
             try
             {
+                Console.WriteLine("Executing: " + invocation);
                 var exitCode = SilentProcessRunner.ExecuteCommand(
                     invocation.Executable,
                     invocation.Arguments,

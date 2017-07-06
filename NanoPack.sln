@@ -1,18 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26510.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F107E36E-FD6D-47D5-8C21-228912553B36}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C85A3522-F980-40B0-AAA3-6C9C895AE0BF}"
-	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NanoPack", "src\NanoPack\NanoPack.xproj", "{F90042D2-2846-4379-98F5-231E57354BDA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NanoPack", "src\NanoPack\NanoPack.csproj", "{F90042D2-2846-4379-98F5-231E57354BDA}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "NanoPack.Tests", "src\NanoPack.Tests\NanoPack.Tests.xproj", "{11287264-DA16-4930-8850-C9A3AF8EAAE9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NanoPack.Tests", "src\NanoPack.Tests\NanoPack.Tests.csproj", "{11287264-DA16-4930-8850-C9A3AF8EAAE9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

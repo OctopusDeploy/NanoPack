@@ -29,7 +29,7 @@ namespace NanoPack
             var vhdx =            app.Option("-x | --vhdx", "Build a VHDX rather than a VHD", CommandOptionType.NoValue);
             var edition =         app.Option("     --edition <edition>", "The windows server edition. Standard or Datacenter", CommandOptionType.SingleValue);
             var scripts =         app.Option("-s | --firstBootScript <path>", "Path to a PowerShell script that will be copied to the VHD and run on its first boot. Multiple allowed.", CommandOptionType.MultipleValue);
-            var copyPath =        app.Option("   | --copyPath <path object>", "Copy files to your VHD. This argument is passed through to the  New-NanoServerImage cmdlet and must be a string that evals to a PowerShell array or hash map.", CommandOptionType.SingleValue);
+            var copyPath =        app.Option("   | --copyPath <path_object>", "Copy files to your VHD. This argument is passed through to the  New-NanoServerImage cmdlet and must be a string that evals to a PowerShell array or hash map.", CommandOptionType.SingleValue);
             var additional =      app.Option("-a | --additional", "Extra options to pass to New-NanoServerImage, for example: -a \"-Ipv4Address \\\"172.21.22.101\\\"\". Multiple allowed.", CommandOptionType.MultipleValue);
 
             app.HelpOption("-? | --help");

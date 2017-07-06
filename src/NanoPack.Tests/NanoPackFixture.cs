@@ -20,8 +20,9 @@ namespace NanoPack.Tests
         protected CommandLine NanoPack()
         {
             var folder = Path.GetDirectoryName(typeof(Program).GetTypeInfo().Assembly.FullLocalPath());
-            var nanoPackFullPath = Path.Combine(folder, "NanoPack.Tests.exe");
-            return CommandLine.Execute(nanoPackFullPath);
+            var nanoPackFullPath = Path.Combine(folder, "NanoPack.Tests.dll");
+            return CommandLine.Execute("dotnet")
+                .Argument(nanoPackFullPath);
         }
 
         protected NanoPackResult Invoke(CommandLine command)

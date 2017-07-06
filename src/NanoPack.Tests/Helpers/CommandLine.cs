@@ -7,27 +7,14 @@ namespace NanoPack.Tests.Helpers
     public class CommandLine
     {
         readonly string executable;
-        readonly Func<string[], int> func;
         string action;
         readonly List<string> arguments = new List<string>();
-        bool rawArgList;
-        bool doubleDash;
 
         public static CommandLine Execute(string executable)
         {
             return new CommandLine(executable);
         }
 
-        public static CommandLine Execute(Func<string[], int> func)
-        {
-            return new CommandLine(func);
-        }
-
-        private CommandLine(Func<string[], int> func)
-        {
-            this.func = func;
-            rawArgList = true;
-        }
 
         public CommandLine(string executable)
         {
@@ -104,8 +91,6 @@ namespace NanoPack.Tests.Helpers
         string Escape(string argValue)
         {
             if (argValue == null) throw new ArgumentNullException("argValue");
-            if (rawArgList)
-                return argValue;
 
             // Though it isn't aesthetically pleasing, we always return a double-quoted
             // value.
