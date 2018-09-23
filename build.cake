@@ -97,13 +97,19 @@ Task("Pack")
 
 Task("Publish")
     .IsDependentOn("Pack")
+    .WithCriteria(BuildSystem.IsRunningOnTeamCity)
     .Does(() =>
 {
-    if (!BuildSystem.IsLocalBuild)
+    NuGetPush($"{artifactsDir}NanoPack.{nugetVersion}.nupkg", new NuGetPushSettings {
+		Source = "https://f.feedz.io/octopus-deploy/dependencies/nuget",
+		ApiKey = EnvironmentVariable("FeedzIoApiKey")
+	});
+
+    if (gitVersionInfo.PreReleaseTagWithDash == "")
     {
-        NuGetPush(artifactsDir + "NanoPack." + nugetVersion + ".nupkg", new NuGetPushSettings {
-            Source = "https://octopus.myget.org/F/octopus-dependencies/api/v3/index.json",
-            ApiKey = EnvironmentVariable("MyGetApiKey")
+          NuGetPush($"{artifactsDir}NanoPack.{nugetVersion}.nupkg", new NuGetPushSettings {
+            Source = "https://www.nuget.org/api/v2/package",
+            ApiKey = EnvironmentVariable("NuGetApiKey")
         });
     }
 });
